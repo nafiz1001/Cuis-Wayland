@@ -1,10 +1,20 @@
-'From Cuis7.1 [latest update: #6472] on 26 June 2024 at 7:15:48 pm'!
+'From Cuis7.0 [latest update: #6452] on 3 July 2024 at 7:36:50 pm'!
 'Description '!
-!provides: 'Wayland' 1 3!
+!provides: 'Wayland' 1 4!
 !requires: 'Network-Kernel' 1 7 nil!
 !requires: 'YAXO' 1 27 nil!
 SystemOrganization addCategory: #Wayland!
 
+
+!classDefinition: #UnixDomainSocket category: #Wayland!
+Socket subclass: #UnixDomainSocket
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Wayland'!
+!classDefinition: 'UnixDomainSocket class' category: #Wayland!
+UnixDomainSocket class
+	instanceVariableNames: ''!
 
 !classDefinition: #WaylandXML category: #Wayland!
 Object subclass: #WaylandXML
@@ -57,6 +67,58 @@ WaylandXMLRequest class
 	instanceVariableNames: ''!
 
 
+!UnixDomainSocket methodsFor: 'as yet unclassified' stamp: 'nafiz 7/3/2024 19:31:57'!
+connectTo: socketAddress
+  | status |
+   
+  status := self primSocketConnectionStatus: socketHandle.
+  (status == Unconnected)
+    ifFalse: [InvalidSocketStatusException signal: 'Socket status must Unconnected before opening a new connection'].
+   
+  self primSocket: socketHandle connectTo: socketAddress! !
+
+!UnixDomainSocket methodsFor: 'as yet unclassified' stamp: 'nafiz 7/3/2024 19:32:06'!
+initialize: socketType withDomain: socketDomain
+	"Initialize a new socket handle. If socket creation fails, socketHandle will be set to nil."
+	| semaIndex readSemaIndex writeSemaIndex |
+
+	semaphore := Semaphore new.
+	readSemaphore := Semaphore new.
+	writeSemaphore := Semaphore new.
+	semaIndex := Smalltalk registerExternalObject: semaphore.
+	readSemaIndex := Smalltalk registerExternalObject: readSemaphore.
+	writeSemaIndex := Smalltalk registerExternalObject: writeSemaphore.
+	socketHandle :=
+		self primSocketCreateNetwork: socketDomain
+			type: socketType
+			receiveBufferSize: 8000
+			sendBufSize: 8000
+			semaIndex: semaIndex
+			readSemaIndex: readSemaIndex
+			writeSemaIndex: writeSemaIndex.
+
+	socketHandle 
+		ifNotNil: [ self register ]
+		ifNil: [  "socket creation failed"
+			Smalltalk unregisterExternalObject: semaphore.
+			Smalltalk unregisterExternalObject: readSemaphore.
+			Smalltalk unregisterExternalObject: writeSemaphore.
+			readSemaphore := writeSemaphore := semaphore := nil ]
+! !
+
+!UnixDomainSocket methodsFor: 'as yet unclassified' stamp: 'nafiz 7/3/2024 19:32:10'!
+newUDS
+  "Create a socket and initialise it for IPC aka Unix domain."
+  self initializeNetwork.
+  ^[ super new initialize: TCPSocketType withDomain: 1 ]
+   repeatWithGCIf: [ :socket | socket isValid not ]! !
+
+!UnixDomainSocket methodsFor: 'as yet unclassified' stamp: 'nafiz 7/3/2024 19:32:18'!
+primSocket: socket connectTo: socketAddress
+	<primitive: 'primitiveSocketConnectTo' module: 'SocketPlugin'>
+	self primitiveFailed
+! !
+
 !WaylandXML methodsFor: 'as yet unclassified' stamp: 'nafiz 6/25/2024 18:56:50'!
 interfaces
 	^ xml elements first elements
@@ -100,55 +162,3 @@ setXML: aInterfaceXML
 !WaylandXMLRequest methodsFor: 'as yet unclassified' stamp: 'nafiz 6/25/2024 18:02:44'!
 setXML: aInterfaceXML
 	xml := aInterfaceXML! !
-
-!Socket methodsFor: '*Wayland' stamp: 'nafiz 6/26/2024 19:01:48'!
-connectTo: socketAddress
-  | status |
-   
-  status := self primSocketConnectionStatus: socketHandle.
-  (status == Unconnected)
-    ifFalse: [InvalidSocketStatusException signal: 'Socket status must Unconnected before opening a new connection'].
-   
-  self primSocket: socketHandle connectTo: socketAddress! !
-
-!Socket methodsFor: '*Wayland' stamp: 'nafiz 6/26/2024 18:41:25'!
-initialize: socketType withDomain: socketDomain
-	"Initialize a new socket handle. If socket creation fails, socketHandle will be set to nil."
-	| semaIndex readSemaIndex writeSemaIndex |
-
-	semaphore := Semaphore new.
-	readSemaphore := Semaphore new.
-	writeSemaphore := Semaphore new.
-	semaIndex := Smalltalk registerExternalObject: semaphore.
-	readSemaIndex := Smalltalk registerExternalObject: readSemaphore.
-	writeSemaIndex := Smalltalk registerExternalObject: writeSemaphore.
-	socketHandle :=
-		self primSocketCreateNetwork: socketDomain
-			type: socketType
-			receiveBufferSize: 8000
-			sendBufSize: 8000
-			semaIndex: semaIndex
-			readSemaIndex: readSemaIndex
-			writeSemaIndex: writeSemaIndex.
-
-	socketHandle 
-		ifNotNil: [ self register ]
-		ifNil: [  "socket creation failed"
-			Smalltalk unregisterExternalObject: semaphore.
-			Smalltalk unregisterExternalObject: readSemaphore.
-			Smalltalk unregisterExternalObject: writeSemaphore.
-			readSemaphore := writeSemaphore := semaphore := nil ]
-! !
-
-!Socket methodsFor: '*Wayland' stamp: 'nafiz 6/26/2024 18:49:55'!
-newUDS
-  "Create a socket and initialise it for IPC aka Unix domain."
-  self initializeNetwork.
-  ^[ super new initialize: TCPSocketType withDomain: 1 ]
-   repeatWithGCIf: [ :socket | socket isValid not ]! !
-
-!Socket methodsFor: '*Wayland' stamp: 'nafiz 6/26/2024 18:59:37'!
-primSocket: socket connectTo: socketAddress
-	<primitive: 'primitiveSocketConnectTo' module: 'SocketPlugin'>
-	self primitiveFailed
-! !
