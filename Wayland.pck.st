@@ -1,6 +1,8 @@
 'From Cuis7.1 [latest update: #6472] on 26 June 2024 at 7:15:48 pm'!
 'Description '!
 !provides: 'Wayland' 1 3!
+!requires: 'Network-Kernel' 1 7 nil!
+!requires: 'YAXO' 1 27 nil!
 SystemOrganization addCategory: #Wayland!
 
 
