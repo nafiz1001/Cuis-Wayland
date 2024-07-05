@@ -1,22 +1,11 @@
-'From Cuis7.0 [latest update: #6452] on 4 July 2024 at 7:23:54 pm'!
+'From Cuis7.0 [latest update: #6452] on 5 July 2024 at 8:34:32 am'!
 'Description '!
-!provides: 'Wayland' 1 7!
+!provides: 'Wayland' 1 8!
 !requires: 'Network-Kernel' 1 7 nil!
 !requires: 'YAXO' 1 27 nil!
 SystemOrganization addCategory: #'Wayland-XML'!
-SystemOrganization addCategory: #'Wayland-UDS'!
 SystemOrganization addCategory: #Wayland!
 
-
-!classDefinition: #UnixDomainSocket category: #'Wayland-UDS'!
-Socket subclass: #UnixDomainSocket
-	instanceVariableNames: ''
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Wayland-UDS'!
-!classDefinition: 'UnixDomainSocket class' category: #'Wayland-UDS'!
-UnixDomainSocket class
-	instanceVariableNames: ''!
 
 !classDefinition: #WaylandXML category: #'Wayland-XML'!
 Object subclass: #WaylandXML
@@ -68,68 +57,6 @@ Object subclass: #WaylandXMLRequest
 WaylandXMLRequest class
 	instanceVariableNames: ''!
 
-!classDefinition: #LocalSocketAddress category: #'Wayland-UDS'!
-Object subclass: #LocalSocketAddress
-	instanceVariableNames: ''
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Wayland-UDS'!
-!classDefinition: 'LocalSocketAddress class' category: #'Wayland-UDS'!
-LocalSocketAddress class
-	instanceVariableNames: ''!
-
-
-!UnixDomainSocket methodsFor: 'as yet unclassified' stamp: 'nafiz 7/4/2024 18:51:17'!
-connectTo: socketAddress
-  | status |
-   
-  status := self primSocketConnectionStatus: socketHandle.
-  (status == Unconnected)
-    ifFalse: [InvalidSocketStatusException signal: 'Socket status must Unconnected before opening a new connection'].
-   
-  self primSocket: socketHandle connectTo: socketAddress! !
-
-!UnixDomainSocket methodsFor: 'as yet unclassified' stamp: 'nafiz 7/3/2024 19:32:06'!
-initialize: socketType withDomain: socketDomain
-	"Initialize a new socket handle. If socket creation fails, socketHandle will be set to nil."
-	| semaIndex readSemaIndex writeSemaIndex |
-
-	semaphore := Semaphore new.
-	readSemaphore := Semaphore new.
-	writeSemaphore := Semaphore new.
-	semaIndex := Smalltalk registerExternalObject: semaphore.
-	readSemaIndex := Smalltalk registerExternalObject: readSemaphore.
-	writeSemaIndex := Smalltalk registerExternalObject: writeSemaphore.
-	socketHandle :=
-		self primSocketCreateNetwork: socketDomain
-			type: socketType
-			receiveBufferSize: 8000
-			sendBufSize: 8000
-			semaIndex: semaIndex
-			readSemaIndex: readSemaIndex
-			writeSemaIndex: writeSemaIndex.
-
-	socketHandle 
-		ifNotNil: [ self register ]
-		ifNil: [  "socket creation failed"
-			Smalltalk unregisterExternalObject: semaphore.
-			Smalltalk unregisterExternalObject: readSemaphore.
-			Smalltalk unregisterExternalObject: writeSemaphore.
-			readSemaphore := writeSemaphore := semaphore := nil ]
-! !
-
-!UnixDomainSocket methodsFor: 'as yet unclassified' stamp: 'nafiz 7/3/2024 19:32:18'!
-primSocket: socket connectTo: socketAddress
-	<primitive: 'primitiveSocketConnectTo' module: 'SocketPlugin'>
-	self primitiveFailed
-! !
-
-!UnixDomainSocket class methodsFor: 'as yet unclassified' stamp: 'nafiz 7/4/2024 07:57:52'!
-newUDS
-  "Create a socket and initialise it for IPC aka Unix domain."
-  self initializeNetwork.
-  ^[ super new initialize: TCPSocketType withDomain: 1 ]
-   repeatWithGCIf: [ :socket | socket isValid not ]! !
 
 !WaylandXML methodsFor: 'as yet unclassified' stamp: 'nafiz 6/25/2024 18:56:50'!
 interfaces
@@ -174,12 +101,3 @@ setXML: aInterfaceXML
 !WaylandXMLRequest methodsFor: 'as yet unclassified' stamp: 'nafiz 6/25/2024 18:02:44'!
 setXML: aInterfaceXML
 	xml := aInterfaceXML! !
-
-!LocalSocketAddress class methodsFor: 'as yet unclassified' stamp: 'nafiz 7/4/2024 18:57:13'!
-primResolverGetAddressInfoHost: hostName service: servName flags: flags family: family type: type protocol: protocol
-	<primitive: 'primitiveResolverGetAddressInfo' module: 'SocketPlugin'>
-	self primitiveFailed.! !
-
-!LocalSocketAddress class methodsFor: 'as yet unclassified' stamp: 'nafiz 7/4/2024 19:14:31'!
-socketAddressFromPath: path
-^ self primResolverGetAddressInfoHost: '' service: path flags: 0  family: 1  type: 1 protocol: 1! !
