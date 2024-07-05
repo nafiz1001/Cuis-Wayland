@@ -1,73 +1,85 @@
-'From Cuis7.0 [latest update: #6452] on 3 July 2024 at 7:36:50 pm'!
+'From Cuis7.0 [latest update: #6452] on 4 July 2024 at 7:23:54 pm'!
 'Description '!
-!provides: 'Wayland' 1 4!
+!provides: 'Wayland' 1 7!
 !requires: 'Network-Kernel' 1 7 nil!
 !requires: 'YAXO' 1 27 nil!
+SystemOrganization addCategory: #'Wayland-XML'!
+SystemOrganization addCategory: #'Wayland-UDS'!
 SystemOrganization addCategory: #Wayland!
 
 
-!classDefinition: #UnixDomainSocket category: #Wayland!
+!classDefinition: #UnixDomainSocket category: #'Wayland-UDS'!
 Socket subclass: #UnixDomainSocket
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
-	category: 'Wayland'!
-!classDefinition: 'UnixDomainSocket class' category: #Wayland!
+	category: 'Wayland-UDS'!
+!classDefinition: 'UnixDomainSocket class' category: #'Wayland-UDS'!
 UnixDomainSocket class
 	instanceVariableNames: ''!
 
-!classDefinition: #WaylandXML category: #Wayland!
+!classDefinition: #WaylandXML category: #'Wayland-XML'!
 Object subclass: #WaylandXML
 	instanceVariableNames: 'xml'
 	classVariableNames: ''
 	poolDictionaries: ''
-	category: 'Wayland'!
-!classDefinition: 'WaylandXML class' category: #Wayland!
+	category: 'Wayland-XML'!
+!classDefinition: 'WaylandXML class' category: #'Wayland-XML'!
 WaylandXML class
 	instanceVariableNames: 'xml'!
 
-!classDefinition: #WaylandXMLEnum category: #Wayland!
+!classDefinition: #WaylandXMLEnum category: #'Wayland-XML'!
 Object subclass: #WaylandXMLEnum
 	instanceVariableNames: 'xml'
 	classVariableNames: ''
 	poolDictionaries: ''
-	category: 'Wayland'!
-!classDefinition: 'WaylandXMLEnum class' category: #Wayland!
+	category: 'Wayland-XML'!
+!classDefinition: 'WaylandXMLEnum class' category: #'Wayland-XML'!
 WaylandXMLEnum class
 	instanceVariableNames: ''!
 
-!classDefinition: #WaylandXMLEvent category: #Wayland!
+!classDefinition: #WaylandXMLEvent category: #'Wayland-XML'!
 Object subclass: #WaylandXMLEvent
 	instanceVariableNames: 'xml'
 	classVariableNames: ''
 	poolDictionaries: ''
-	category: 'Wayland'!
-!classDefinition: 'WaylandXMLEvent class' category: #Wayland!
+	category: 'Wayland-XML'!
+!classDefinition: 'WaylandXMLEvent class' category: #'Wayland-XML'!
 WaylandXMLEvent class
 	instanceVariableNames: ''!
 
-!classDefinition: #WaylandXMLInterface category: #Wayland!
+!classDefinition: #WaylandXMLInterface category: #'Wayland-XML'!
 Object subclass: #WaylandXMLInterface
 	instanceVariableNames: 'xml'
 	classVariableNames: ''
 	poolDictionaries: ''
-	category: 'Wayland'!
-!classDefinition: 'WaylandXMLInterface class' category: #Wayland!
+	category: 'Wayland-XML'!
+!classDefinition: 'WaylandXMLInterface class' category: #'Wayland-XML'!
 WaylandXMLInterface class
 	instanceVariableNames: ''!
 
-!classDefinition: #WaylandXMLRequest category: #Wayland!
+!classDefinition: #WaylandXMLRequest category: #'Wayland-XML'!
 Object subclass: #WaylandXMLRequest
 	instanceVariableNames: 'xml'
 	classVariableNames: ''
 	poolDictionaries: ''
-	category: 'Wayland'!
-!classDefinition: 'WaylandXMLRequest class' category: #Wayland!
+	category: 'Wayland-XML'!
+!classDefinition: 'WaylandXMLRequest class' category: #'Wayland-XML'!
 WaylandXMLRequest class
 	instanceVariableNames: ''!
 
+!classDefinition: #LocalSocketAddress category: #'Wayland-UDS'!
+Object subclass: #LocalSocketAddress
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Wayland-UDS'!
+!classDefinition: 'LocalSocketAddress class' category: #'Wayland-UDS'!
+LocalSocketAddress class
+	instanceVariableNames: ''!
 
-!UnixDomainSocket methodsFor: 'as yet unclassified' stamp: 'nafiz 7/3/2024 19:31:57'!
+
+!UnixDomainSocket methodsFor: 'as yet unclassified' stamp: 'nafiz 7/4/2024 18:51:17'!
 connectTo: socketAddress
   | status |
    
@@ -106,18 +118,18 @@ initialize: socketType withDomain: socketDomain
 			readSemaphore := writeSemaphore := semaphore := nil ]
 ! !
 
-!UnixDomainSocket methodsFor: 'as yet unclassified' stamp: 'nafiz 7/3/2024 19:32:10'!
-newUDS
-  "Create a socket and initialise it for IPC aka Unix domain."
-  self initializeNetwork.
-  ^[ super new initialize: TCPSocketType withDomain: 1 ]
-   repeatWithGCIf: [ :socket | socket isValid not ]! !
-
 !UnixDomainSocket methodsFor: 'as yet unclassified' stamp: 'nafiz 7/3/2024 19:32:18'!
 primSocket: socket connectTo: socketAddress
 	<primitive: 'primitiveSocketConnectTo' module: 'SocketPlugin'>
 	self primitiveFailed
 ! !
+
+!UnixDomainSocket class methodsFor: 'as yet unclassified' stamp: 'nafiz 7/4/2024 07:57:52'!
+newUDS
+  "Create a socket and initialise it for IPC aka Unix domain."
+  self initializeNetwork.
+  ^[ super new initialize: TCPSocketType withDomain: 1 ]
+   repeatWithGCIf: [ :socket | socket isValid not ]! !
 
 !WaylandXML methodsFor: 'as yet unclassified' stamp: 'nafiz 6/25/2024 18:56:50'!
 interfaces
@@ -162,3 +174,12 @@ setXML: aInterfaceXML
 !WaylandXMLRequest methodsFor: 'as yet unclassified' stamp: 'nafiz 6/25/2024 18:02:44'!
 setXML: aInterfaceXML
 	xml := aInterfaceXML! !
+
+!LocalSocketAddress class methodsFor: 'as yet unclassified' stamp: 'nafiz 7/4/2024 18:57:13'!
+primResolverGetAddressInfoHost: hostName service: servName flags: flags family: family type: type protocol: protocol
+	<primitive: 'primitiveResolverGetAddressInfo' module: 'SocketPlugin'>
+	self primitiveFailed.! !
+
+!LocalSocketAddress class methodsFor: 'as yet unclassified' stamp: 'nafiz 7/4/2024 19:14:31'!
+socketAddressFromPath: path
+^ self primResolverGetAddressInfoHost: '' service: path flags: 0  family: 1  type: 1 protocol: 1! !
