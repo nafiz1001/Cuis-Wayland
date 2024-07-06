@@ -1,6 +1,6 @@
-'From Cuis7.0 [latest update: #6452] on 5 July 2024 at 10:28:50 am'!
+'From Cuis7.0 [latest update: #6452] on 5 July 2024 at 9:44:21 pm'!
 'Description '!
-!provides: 'Wayland' 1 10!
+!provides: 'Wayland' 1 12!
 !requires: 'Network-Kernel' 1 7 nil!
 !requires: 'YAXO' 1 27 nil!
 SystemOrganization addCategory: #Wayland!
@@ -164,3 +164,89 @@ entryName
 	value = 2 ifTrue: [ ^ 'no_memory' ].
 	value = 3 ifTrue: [ ^ 'implementation' ].
 	^ nil.! !
+
+!NetNameResolver class methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 21:40:34'!
+addressForPathString: aPath
+	| socketAddress |
+	self initializeNetwork.
+	"Protect the execution of this block, as the ResolverSemaphore is used for both parts of the transaction."
+	self resolverMutex critical: [
+		self
+			primResolverGetAddressInfoHost: ''
+			service: aPath
+			flags: 0
+			family: 1
+			type: 1
+			protocol: 1.
+			socketAddress := ByteArray new: (self primResolverGetAddressInfoSize) withAll: 0.
+			self primResolverGetAddressInfoResult: socketAddress. ].
+	^ socketAddress.! !
+
+!NetNameResolver class methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 21:24:13'!
+primResolverGetAddressInfoHost: hostName service: servName flags: flags family: family type: type protocol: protocol
+	<primitive: 'primitiveResolverGetAddressInfo' module: 'SocketPlugin'>
+	self primitiveFailed.! !
+
+!NetNameResolver class methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 21:24:01'!
+primResolverGetAddressInfoResult: socketAddress
+	<primitive: 'primitiveResolverGetAddressInfoResult' module: 'SocketPlugin'>
+	self primitiveFailed.! !
+
+!NetNameResolver class methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 21:23:40'!
+primResolverGetAddressInfoSize
+
+	<primitive: 'primitiveResolverGetAddressInfoSize' module: 'SocketPlugin'>
+	self primitiveFailed.! !
+
+!Socket methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 19:43:15'!
+bindTo: socketAddress
+	self primSocket: socketHandle bindTo: socketAddress! !
+
+!Socket methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 18:15:06'!
+initialize: socketType netType: netType
+	"Initialize a new socket handle. If socket creation fails, socketHandle will be set to nil."
+	| semaIndex readSemaIndex writeSemaIndex |
+
+	semaphore := Semaphore new.
+	readSemaphore := Semaphore new.
+	writeSemaphore := Semaphore new.
+	semaIndex := Smalltalk registerExternalObject: semaphore.
+	readSemaIndex := Smalltalk registerExternalObject: readSemaphore.
+	writeSemaIndex := Smalltalk registerExternalObject: writeSemaphore.
+	socketHandle :=
+		self primSocketCreateNetwork: netType
+			type: socketType
+			receiveBufferSize: 8000
+			sendBufSize: 8000
+			semaIndex: semaIndex
+			readSemaIndex: readSemaIndex
+			writeSemaIndex: writeSemaIndex.
+
+	socketHandle 
+		ifNotNil: [ self register ]
+		ifNil: [  "socket creation failed"
+			Smalltalk unregisterExternalObject: semaphore.
+			Smalltalk unregisterExternalObject: readSemaphore.
+			Smalltalk unregisterExternalObject: writeSemaphore.
+			readSemaphore := writeSemaphore := semaphore := nil ]! !
+
+!Socket methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 19:38:51'!
+primSocket: socket bindTo: socketAddress
+	<primitive: 'primitiveSocketBindTo' module: 'SocketPlugin'>
+	self primitiveFailed! !
+
+!Socket methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 19:41:55'!
+primSocket: socket connectTo: socketAddress
+	<primitive: 'primitiveSocketConnectTo' module: 'SocketPlugin'>
+	self primitiveFailed
+! !
+
+!Socket class methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 18:34:27'!
+newUDS
+	"Create a socket and initialise it for Unix domain."
+	self initializeNetwork.
+	^ [
+	super new
+		initialize: TCPSocketType
+		netType: 1 ] repeatWithGCIf: [ :socket |
+		socket isValid not ].! !
