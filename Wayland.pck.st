@@ -1,6 +1,6 @@
-'From Cuis7.0 [latest update: #6452] on 5 July 2024 at 9:44:21 pm'!
+'From Cuis7.0 [latest update: #6452] on 6 July 2024 at 9:45:07 am'!
 'Description '!
-!provides: 'Wayland' 1 12!
+!provides: 'Wayland' 1 13!
 !requires: 'Network-Kernel' 1 7 nil!
 !requires: 'YAXO' 1 27 nil!
 SystemOrganization addCategory: #Wayland!
@@ -165,23 +165,6 @@ entryName
 	value = 3 ifTrue: [ ^ 'implementation' ].
 	^ nil.! !
 
-!NetNameResolver class methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 21:40:34'!
-addressForPathString: aPath
-	| socketAddress |
-	self initializeNetwork.
-	"Protect the execution of this block, as the ResolverSemaphore is used for both parts of the transaction."
-	self resolverMutex critical: [
-		self
-			primResolverGetAddressInfoHost: ''
-			service: aPath
-			flags: 0
-			family: 1
-			type: 1
-			protocol: 1.
-			socketAddress := ByteArray new: (self primResolverGetAddressInfoSize) withAll: 0.
-			self primResolverGetAddressInfoResult: socketAddress. ].
-	^ socketAddress.! !
-
 !NetNameResolver class methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 21:24:13'!
 primResolverGetAddressInfoHost: hostName service: servName flags: flags family: family type: type protocol: protocol
 	<primitive: 'primitiveResolverGetAddressInfo' module: 'SocketPlugin'>
@@ -198,9 +181,37 @@ primResolverGetAddressInfoSize
 	<primitive: 'primitiveResolverGetAddressInfoSize' module: 'SocketPlugin'>
 	self primitiveFailed.! !
 
+!NetNameResolver class methodsFor: '*Wayland' stamp: 'nafiz 7/6/2024 09:34:43'!
+socketAddressFromPathString: aPath
+	| socketAddress |
+	self initializeNetwork.
+	"Protect the execution of this block, as the ResolverSemaphore is used for both parts of the transaction."
+	self resolverMutex critical: [
+		self
+			primResolverGetAddressInfoHost: ''
+			service: aPath
+			flags: 0
+			family: 1
+			type: 1
+			protocol: 1.
+			socketAddress := ByteArray new: (self primResolverGetAddressInfoSize) withAll: 0.
+			self primResolverGetAddressInfoResult: socketAddress. ].
+	^ socketAddress.! !
+
 !Socket methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 19:43:15'!
 bindTo: socketAddress
 	self primSocket: socketHandle bindTo: socketAddress! !
+
+!Socket methodsFor: '*Wayland' stamp: 'nafiz 7/6/2024 09:40:00'!
+connectTo: socketAddress
+	| status |
+	self initializeNetwork.
+	status := self primSocketConnectionStatus: socketHandle.
+	(status == Unconnected)
+		ifFalse: [InvalidSocketStatusException signal: 'Socket status must Unconnected before opening a new connection'].
+
+	self primSocket: socketHandle connectTo: socketAddress.
+! !
 
 !Socket methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 18:15:06'!
 initialize: socketType netType: netType
