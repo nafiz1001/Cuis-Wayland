@@ -1,6 +1,6 @@
-'From Cuis7.0 [latest update: #6452] on 6 July 2024 at 9:45:07 am'!
+'From Cuis7.0 [latest update: #6452] on 11 July 2024 at 4:40:17 pm'!
 'Description '!
-!provides: 'Wayland' 1 13!
+!provides: 'Wayland' 1 14!
 !requires: 'Network-Kernel' 1 7 nil!
 !requires: 'YAXO' 1 27 nil!
 SystemOrganization addCategory: #Wayland!
@@ -241,6 +241,14 @@ initialize: socketType netType: netType
 			Smalltalk unregisterExternalObject: writeSemaphore.
 			readSemaphore := writeSemaphore := semaphore := nil ]! !
 
+!Socket methodsFor: '*Wayland' stamp: 'nafiz 7/11/2024 16:34:41'!
+listenWithBacklog: backlogSize
+	| status |
+	status := self primSocketConnectionStatus: socketHandle.
+	(status == Unconnected)
+		ifFalse: [InvalidSocketStatusException signal: 'Socket status must Unconnected before listening for a new connection'].
+	self primSocket: socketHandle listenWithBacklog: backlogSize.! !
+
 !Socket methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 19:38:51'!
 primSocket: socket bindTo: socketAddress
 	<primitive: 'primitiveSocketBindTo' module: 'SocketPlugin'>
@@ -251,6 +259,11 @@ primSocket: socket connectTo: socketAddress
 	<primitive: 'primitiveSocketConnectTo' module: 'SocketPlugin'>
 	self primitiveFailed
 ! !
+
+!Socket methodsFor: '*Wayland' stamp: 'nafiz 7/11/2024 16:30:53'!
+primSocket: socket listenWithBacklog: backlogSize
+	<primitive: 'primitiveSocketListenWithBacklog' module: 'SocketPlugin'>
+	self primitiveFailed! !
 
 !Socket class methodsFor: '*Wayland' stamp: 'nafiz 7/5/2024 18:34:27'!
 newUDS
